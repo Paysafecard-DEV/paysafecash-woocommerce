@@ -33,10 +33,11 @@ function paysafecash_country_restriction( $available_gateways ) {
 	$is_diabled = true;
 
 	foreach($options["country"] AS $country){
-		if($woocommerce->customer->get_country() == $country){
+		if(WC()->customer->get_shipping_country() == $country){
 			$is_diabled = false;
 		}
 	}
+
 
 	if($is_diabled == true){
 		unset($available_gateways["paysafecash"]);
@@ -90,8 +91,7 @@ function paysafecash_init_gateway_class() {
 		function paysafecash_textdomain() {
 			load_plugin_textdomain( 'paysafecash', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/');
 		}
-
-
+		
 		/**
 		 * Plugin options, we deal with it in Step 3 too
 		 */
@@ -552,6 +552,70 @@ function paysafecash_init_gateway_class() {
 			}
 		}
 
+
+		function test_button_menu(){
+			add_menu_page('Test Button Page', 'Test Button', 'manage_options', 'test-button-slug', 'test_button_admin_page');
+
+		}
+
+		function test_button_admin_page() {
+
+			// This function creates the output for the admin page.
+			// It also checks the value of the $_POST variable to see whether
+			// there has been a form submission.
+
+			// The check_admin_referer is a WordPress function that does some security
+			// checking and is recommended good practice.
+
+			// General check for user permissions.
+			if (!current_user_can('manage_options'))  {
+				wp_die( __('You do not have sufficient pilchards to access this page.')    );
+			}
+
+			// Start building the page
+
+			echo '<div class="wrap">';
+
+			echo '<h2>Test Button Demo</h2>';
+
+			// Check whether the button has been pressed AND also check the nonce
+			if (isset($_POST['test_button']) && check_admin_referer('test_button_clicked')) {
+				// the button has been pressed AND we've passed the security check
+				test_button_action();
+			}
+
+			echo '<form action="options-general.php?page=test-button-slug" method="post">';
+
+			// this is a WordPress security feature - see: https://codex.wordpress.org/WordPress_Nonces
+			wp_nonce_field('test_button_clicked');
+			echo '<input type="hidden" value="true" name="test_button" />';
+			submit_button('Call Function');
+			echo '</form>';
+
+			echo '</div>';
+
+		}
+
+		function test_button_action()
+		{
+			echo '<div id="message" class="updated fade"><p>'
+			     .'The "Call Function" button was clicked.' . '</p></div>';
+
+			$path = WP_TEMP_DIR . '/test-button-log.txt';
+
+			$handle = fopen($path,"w");
+
+			if ($handle == false) {
+				echo '<p>Could not write the log file to the temporary directory: ' . $path . '</p>';
+			}
+			else {
+				echo '<p>Log of button click written to: ' . $path . '</p>';
+
+				fwrite ($handle , "Call Function button clicked on: " . date("D j M Y H:i:s", time()));
+				fclose ($handle);
+			}
+		}
+
 		public function payment_scripts(){
 
 		}
@@ -561,8 +625,6 @@ function paysafecash_init_gateway_class() {
 
 			$payment_id = $_GET['payment_id'];
 			$order_id   = $_GET['order_id'];
-
-			exec('echo "'.print_r($_GET, true).'" >> /tmp/wp.log');
 
 			$this->init_settings();
 			$this->api_key        = $this->settings['api_key'];
