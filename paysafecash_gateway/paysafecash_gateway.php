@@ -6,7 +6,7 @@
  * Author: Paysafecash
  * Text Domain: paysafecash
  * Author URI: https://www.paysafecash.com/en/
- * Version: 1.0.0
+ * Version: 1.0.2
  *
 */
 include( plugin_dir_path( __FILE__ ) . 'libs/PaymentClass.php' );
@@ -23,25 +23,27 @@ function paysafecash_add_gateway_class( $methods ) {
 }
 
 function paysafecash_textdomain() {
-	load_plugin_textdomain( 'paysafecash', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/');
+	load_plugin_textdomain( 'paysafecash', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
 
 function paysafecash_country_restriction( $available_gateways ) {
 	global $woocommerce;
 
-	$options = get_option('woocommerce_paysafecash_settings');
+	$options    = get_option( 'woocommerce_paysafecash_settings' );
 	$is_diabled = true;
 
-	foreach($options["country"] AS $country){
-		if(WC()->customer->get_shipping_country() == $country){
-			$is_diabled = false;
+	foreach ( $options["country"] AS $country ) {
+		if ( WC()->customer != null ) {
+			if ( WC()->customer->get_shipping_country() == $country ) {
+				$is_diabled = false;
+			}
 		}
 	}
 
-
-	if($is_diabled == true){
-		unset($available_gateways["paysafecash"]);
+	if ( $is_diabled == true ) {
+		unset( $available_gateways["paysafecash"] );
 	}
+
 	return $available_gateways;
 
 }
@@ -57,9 +59,9 @@ function paysafecash_init_gateway_class() {
 			$this->has_fields         = true;
 			$this->method_title       = 'Paysafecash';
 			$this->method_description = __( 'Paysafecash is a cash payment option. Generate a QR/barcode and pay at a nearby shop.More information and our payment points can be found at <a href=\"https://www.paysafecash.com\" target=\"_blank\">www.paysafecash.com</a>', 'paysafecash' );
-			$this->description = $this->method_description;
-			$this->version     = "1.0.0";
-			$this->supports    = array(
+			$this->description        = $this->method_description;
+			$this->version            = "1.0.2";
+			$this->supports           = array(
 				'products',
 				'refunds'
 			);
@@ -82,6 +84,8 @@ function paysafecash_init_gateway_class() {
 
 			add_action( 'woocommerce_api_' . strtolower( get_class( $this ) ), array( $this, 'callback_handler' ) );
 
+			add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
+
 			add_action( 'woocommerce_thankyou_paysafecash', array( $this, 'check_response' ) );
 
 			add_filter( 'woocommerce_available_payment_gateways', 'paysafecash_country_restriction' );
@@ -89,19 +93,19 @@ function paysafecash_init_gateway_class() {
 		}
 
 		function paysafecash_textdomain() {
-			load_plugin_textdomain( 'paysafecash', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/');
+			load_plugin_textdomain( 'paysafecash', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 		}
-		
+
 		/**
 		 * Plugin options, we deal with it in Step 3 too
 		 */
 		public function init_form_fields() {
 			$this->form_fields = array(
 				'enabled'        => array(
-					'title'       => 'Enable/Disable',
-					'label'       => 'Enable Paysafecash',
-					'type'        => 'checkbox',
-					'default'     => 'no'
+					'title'   => 'Enable/Disable',
+					'label'   => 'Enable Paysafecash',
+					'type'    => 'checkbox',
+					'default' => 'no'
 				),
 				'testmode'       => array(
 					'title'       => 'Test mode',
@@ -396,10 +400,9 @@ function paysafecash_init_gateway_class() {
 					$this->description .= ' TEST MODE ENABLED';
 					$this->description = trim( $this->description );
 				}
-				echo wpautop( wp_kses_post( '<img width="270px" height="77px" style="max-height: 100%; width:100%; float:left;" src="' . plugins_url( 'img/paysafecash.png', __FILE__ ) . '" ><br>'.$this->description ) );
+				echo wpautop( wp_kses_post( '<img width="270px" height="77px" style="max-height: 100%; width:100%; float:left;" src="' . plugins_url( 'img/paysafecash.png', __FILE__ ) . '" ><br>' . $this->description ) );
 			}
 		}
-
 
 
 		public function process_payment( $order_id ) {
@@ -419,9 +422,9 @@ function paysafecash_init_gateway_class() {
 			}
 
 			$pscpayment       = new PaysafecardCashController( $this->api_key, $env );
-			$success_url      = $order->get_checkout_order_received_url() . "&paysafecash=true&success=true&order_id=".$order->get_order_number()."&payment_id={payment_id}";
+			$success_url      = $order->get_checkout_order_received_url() . "&paysafecash=true&success=true&order_id=" . $order->get_order_number() . "&payment_id={payment_id}";
 			$failure_url      = $order->get_checkout_payment_url() . "&paysafecash=false&failed=true&payment_id={payment_id}";
-			$notification_url = $this->get_return_url( $order ) . "&wc-api=wc_paysafecash_gateway&order_id=".$order->get_order_number()."&payment_id={payment_id}";
+			$notification_url = $this->get_return_url( $order ) . "&wc-api=wc_paysafecash_gateway&order_id=" . $order->get_order_number() . "&payment_id={payment_id}";
 
 			$customerhash = "";
 
@@ -553,8 +556,8 @@ function paysafecash_init_gateway_class() {
 		}
 
 
-		function test_button_menu(){
-			add_menu_page('Test Button Page', 'Test Button', 'manage_options', 'test-button-slug', 'test_button_admin_page');
+		function test_button_menu() {
+			add_menu_page( 'Test Button Page', 'Test Button', 'manage_options', 'test-button-slug', 'test_button_admin_page' );
 
 		}
 
@@ -568,8 +571,8 @@ function paysafecash_init_gateway_class() {
 			// checking and is recommended good practice.
 
 			// General check for user permissions.
-			if (!current_user_can('manage_options'))  {
-				wp_die( __('You do not have sufficient pilchards to access this page.')    );
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( __( 'You do not have sufficient pilchards to access this page.' ) );
 			}
 
 			// Start building the page
@@ -579,7 +582,7 @@ function paysafecash_init_gateway_class() {
 			echo '<h2>Test Button Demo</h2>';
 
 			// Check whether the button has been pressed AND also check the nonce
-			if (isset($_POST['test_button']) && check_admin_referer('test_button_clicked')) {
+			if ( isset( $_POST['test_button'] ) && check_admin_referer( 'test_button_clicked' ) ) {
 				// the button has been pressed AND we've passed the security check
 				test_button_action();
 			}
@@ -587,36 +590,38 @@ function paysafecash_init_gateway_class() {
 			echo '<form action="options-general.php?page=test-button-slug" method="post">';
 
 			// this is a WordPress security feature - see: https://codex.wordpress.org/WordPress_Nonces
-			wp_nonce_field('test_button_clicked');
+			wp_nonce_field( 'test_button_clicked' );
 			echo '<input type="hidden" value="true" name="test_button" />';
-			submit_button('Call Function');
+			submit_button( 'Call Function' );
 			echo '</form>';
 
 			echo '</div>';
 
 		}
 
-		function test_button_action()
-		{
+		function test_button_action() {
 			echo '<div id="message" class="updated fade"><p>'
-			     .'The "Call Function" button was clicked.' . '</p></div>';
+			     . 'The "Call Function" button was clicked.' . '</p></div>';
 
 			$path = WP_TEMP_DIR . '/test-button-log.txt';
 
-			$handle = fopen($path,"w");
+			$handle = fopen( $path, "w" );
 
-			if ($handle == false) {
+			if ( $handle == false ) {
 				echo '<p>Could not write the log file to the temporary directory: ' . $path . '</p>';
-			}
-			else {
+			} else {
 				echo '<p>Log of button click written to: ' . $path . '</p>';
 
-				fwrite ($handle , "Call Function button clicked on: " . date("D j M Y H:i:s", time()));
-				fclose ($handle);
+				fwrite( $handle, "Call Function button clicked on: " . date( "D j M Y H:i:s", time() ) );
+				fclose( $handle );
 			}
 		}
 
-		public function payment_scripts(){
+		public function payment_scripts() {
+			
+		}
+
+		public function validate_fields() {
 
 		}
 
