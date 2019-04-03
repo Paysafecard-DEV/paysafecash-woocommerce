@@ -6,7 +6,7 @@
  * Author: Paysafecash
  * Text Domain: paysafecash
  * Author URI: https://www.paysafecash.com/en/
- * Version: 1.0.2
+ * Version: 1.0.3
  *
 */
 include( plugin_dir_path( __FILE__ ) . 'libs/PaymentClass.php' );
@@ -37,6 +37,8 @@ function paysafecash_country_restriction( $available_gateways ) {
 			if ( WC()->customer->get_shipping_country() == $country ) {
 				$is_diabled = false;
 			}
+		}else{
+			$is_diabled = false;
 		}
 	}
 
@@ -60,7 +62,7 @@ function paysafecash_init_gateway_class() {
 			$this->method_title       = 'Paysafecash';
 			$this->method_description = __( 'Paysafecash is a cash payment option. Generate a QR/barcode and pay at a nearby shop.More information and our payment points can be found at <a href=\"https://www.paysafecash.com\" target=\"_blank\">www.paysafecash.com</a>', 'paysafecash' );
 			$this->description        = $this->method_description;
-			$this->version            = "1.0.2";
+			$this->version            = "1.0.3";
 			$this->supports           = array(
 				'products',
 				'refunds'
@@ -69,7 +71,7 @@ function paysafecash_init_gateway_class() {
 			$this->init_form_fields();
 			$this->init_settings();
 			$this->title           = "Paysafecash";
-			$this->description     = __( 'Paysafecash is a cash payment option. Generate a QR/barcode and pay at a nearby shop.More information and our payment points can be found at <a href=\"https://www.paysafecash.com\" target=\"_blank\">www.paysafecash.com</a>', 'paysafecash' );
+			$this->description     = __( '<a href=\"https://www.paysafecash.com\" target=\"_blank\">Paysafecash</a> is a cash payment option. Generate a QR/barcode and pay at a nearby shop.', 'paysafecash' );
 			$this->enabled         = $this->get_option( 'enabled' );
 			$this->testmode        = 'yes' === $this->get_option( 'testmode' );
 			$this->private_key     = $this->testmode ? $this->get_option( 'api_test_key' ) : $this->get_option( 'api_test_key' );
@@ -400,7 +402,7 @@ function paysafecash_init_gateway_class() {
 					$this->description .= ' TEST MODE ENABLED';
 					$this->description = trim( $this->description );
 				}
-				echo wpautop( wp_kses_post( '<img width="270px" height="77px" style="max-height: 100%; width:100%; float:left;" src="' . plugins_url( 'img/paysafecash.png', __FILE__ ) . '" ><br>' . $this->description ) );
+				echo wpautop( wp_kses_post( '<img width="270px" height="77px" src="' . plugins_url( 'img/paysafecash.png', __FILE__ ) . '" ><br>' . $this->description ) );
 			}
 		}
 
@@ -618,7 +620,7 @@ function paysafecash_init_gateway_class() {
 		}
 
 		public function payment_scripts() {
-			
+
 		}
 
 		public function validate_fields() {
@@ -627,9 +629,10 @@ function paysafecash_init_gateway_class() {
 
 		public function callback_handler() {
 			global $woocommerce;
+			global $wp;
 
 			$payment_id = $_GET['payment_id'];
-			$order_id   = $_GET['order_id'];
+			$order_id   = $wp->query_vars['order-received'];
 
 			$this->init_settings();
 			$this->api_key        = $this->settings['api_key'];
@@ -644,12 +647,12 @@ function paysafecash_init_gateway_class() {
 			$pscpayment = new PaysafecardCashController( $this->api_key, $env );
 			$response   = $pscpayment->retrievePayment( $payment_id );
 
-			$order = wc_get_order( $order_id );
-
+			$order = new WC_Order($order_id );
 
 			if ( $response == false ) {
 
 			} else if ( isset( $response["object"] ) ) {
+
 
 				if ( $response["status"] == "SUCCESS" ) {
 					if ( 'processing' == $order->status ) {
