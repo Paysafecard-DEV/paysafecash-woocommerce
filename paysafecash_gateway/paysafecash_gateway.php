@@ -6,7 +6,7 @@
  * Author: Paysafecash
  * Text Domain: paysafecash
  * Author URI: https://www.paysafecash.com/en/
- * Version: 1.0.3
+ * Version: 1.0.4
  *
 */
 include( plugin_dir_path( __FILE__ ) . 'libs/PaymentClass.php' );
@@ -417,7 +417,7 @@ function paysafecash_init_gateway_class() {
 
 			$order = wc_get_order( $order_id );
 
-			if ( $this->testmode ) {
+			if ( $this->testmode == "yes") {
 				$env = "TEST";
 			} else {
 				$env = "PRODUCTION";
@@ -437,6 +437,8 @@ function paysafecash_init_gateway_class() {
 			}
 
 			$response = $pscpayment->initiatePayment( $order->get_total(), $order->get_currency(), $customerhash, $order->get_customer_ip_address(), $success_url, $failure_url, $notification_url, $correlation_id = "", $country_restriction = "", $kyc_restriction = "", $min_age = "", $shop_id = "Woocommerce: " . $woocommerce->version . " | " . $this->version, $this->submerchant_id );
+
+			exec('echo " '.print_r($response, true).' " >> /tmp/psc.log');
 
 			if ( isset( $response["object"] ) ) {
 				return array(
